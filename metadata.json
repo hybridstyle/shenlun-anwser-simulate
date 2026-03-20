@@ -1,0 +1,5 @@
+{
+  "name": "申论田字格模拟器",
+  "description": "模拟申论考试田字格，自动填充文字并计算字数，支持标点占格。",
+  "requestFramePermissions": []
+}
