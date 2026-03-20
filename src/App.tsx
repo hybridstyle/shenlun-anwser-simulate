@@ -12,7 +12,13 @@ const GRID_WIDTH = 25; // Standard Shenlun grid width per row
 export default function App() {
   const [text, setText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
-  const [gridWidth, setGridWidth] = useState(25);
+  const [gridWidth, setGridWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shenlun_grid_width');
+      return saved ? JSON.parse(saved) : 25;
+    }
+    return 25;
+  });
   const [cellSize, setCellSize] = useState(40);
   const [isInputCollapsed, setIsInputCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -26,12 +32,36 @@ export default function App() {
   const [editValue, setEditValue] = useState('');
   const isComposing = useRef(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isOfficeMode, setIsOfficeMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shenlun_office_mode');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Persist office mode state
+  useEffect(() => {
+    localStorage.setItem('shenlun_office_mode', JSON.stringify(isOfficeMode));
+    
+    // Update document title for stealth
+    if (isOfficeMode) {
+      document.title = '新建文档 - Word';
+    } else {
+      document.title = '申论田字格模拟器 - 公务员考试申论写作练习工具';
+    }
+  }, [isOfficeMode]);
 
   // Persist collapse state
   useEffect(() => {
     localStorage.setItem('shenlun_input_collapsed', JSON.stringify(isInputCollapsed));
   }, [isInputCollapsed]);
+
+  // Persist grid width state
+  useEffect(() => {
+    localStorage.setItem('shenlun_grid_width', JSON.stringify(gridWidth));
+  }, [gridWidth]);
 
   // Responsive cell size calculation
   useEffect(() => {
@@ -119,18 +149,29 @@ export default function App() {
         </div>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-red-600 p-2 rounded-lg text-white">
+            <div className={`p-2 rounded-lg text-white transition-colors ${isOfficeMode ? 'bg-stone-400' : 'bg-red-600'}`}>
               <FileText size={24} />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight">申论田字格模拟器</h1>
-              <p className="text-xs text-stone-500 font-medium uppercase tracking-wider">Shenlun Grid Simulator</p>
+              <h1 className="text-xl font-bold tracking-tight">
+                {isOfficeMode ? '在线文本编辑器' : '申论田字格模拟器'}
+              </h1>
+              {!isOfficeMode && (
+                <p className="text-xs text-stone-500 font-medium uppercase tracking-wider">Shenlun Grid Simulator</p>
+              )}
+              {isOfficeMode && (
+                <p className="text-xs text-stone-400 font-medium uppercase tracking-wider">Draft Notes v2.4</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-xs text-stone-400 font-semibold uppercase">当前字数</p>
-              <p className="text-lg font-mono font-bold text-red-600 leading-none">{wordCount}</p>
+              <p className="text-xs text-stone-400 font-semibold uppercase">
+                {isOfficeMode ? '字符数' : '当前字数'}
+              </p>
+              <p className={`text-lg font-mono font-bold leading-none transition-colors ${isOfficeMode ? 'text-stone-600' : 'text-red-600'}`}>
+                {wordCount}
+              </p>
             </div>
             <button 
               onClick={() => setShowSettings(!showSettings)}
@@ -246,8 +287,8 @@ export default function App() {
                   </div>
                 </div>
                 <textarea
-                  className="flex-1 p-4 resize-none focus:outline-none text-lg leading-relaxed text-stone-800 placeholder:text-stone-300"
-                  placeholder="请在此粘贴或输入您的申论文字..."
+                  className={`flex-1 p-4 resize-none focus:outline-none text-lg leading-relaxed text-stone-800 placeholder:text-stone-300 ${isOfficeMode ? 'font-sans' : 'font-serif'}`}
+                  placeholder={isOfficeMode ? "在此输入您的笔记内容..." : "请在此粘贴或输入您的申论文字..."}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                 />
@@ -273,9 +314,9 @@ export default function App() {
                   className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       <h3 className="text-sm font-bold text-stone-700">设置</h3>
-                      <div className="h-4 w-px bg-stone-200" />
+                      <div className="hidden sm:block h-4 w-px bg-stone-200" />
                       <div className="flex items-center gap-4">
                         <label className="text-sm text-stone-500">每行格数</label>
                         <div className="flex items-center gap-2">
@@ -285,7 +326,7 @@ export default function App() {
                               onClick={() => setGridWidth(w)}
                               className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
                                 gridWidth === w 
-                                ? 'bg-red-600 text-white' 
+                                ? (isOfficeMode ? 'bg-stone-600 text-white' : 'bg-red-600 text-white')
                                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                               }`}
                             >
@@ -293,6 +334,22 @@ export default function App() {
                             </button>
                           ))}
                         </div>
+                      </div>
+                      <div className="hidden sm:block h-4 w-px bg-stone-200" />
+                      <div className="flex items-center gap-4">
+                        <label className="text-sm text-stone-500">办公室模式</label>
+                        <button
+                          onClick={() => setIsOfficeMode(!isOfficeMode)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                            isOfficeMode ? 'bg-stone-600' : 'bg-stone-200'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              isOfficeMode ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
                       </div>
                     </div>
                     <button 
@@ -338,7 +395,9 @@ export default function App() {
                       key={`v-solid-${i}`}
                       x1={i * cellSize + 0.5} y1="0" 
                       x2={i * cellSize + 0.5} y2="100%" 
-                      stroke="#f87171" strokeWidth="1" strokeOpacity="0.5" 
+                      stroke={isOfficeMode ? "#d1d5db" : "#f87171"} 
+                      strokeWidth="1" 
+                      strokeOpacity={isOfficeMode ? "0.3" : "0.5"} 
                     />
                   ))}
                   {/* Horizontal Solid Lines */}
@@ -347,7 +406,9 @@ export default function App() {
                       key={`h-solid-${i}`}
                       x1="0" y1={i * cellSize + 0.5} 
                       x2="100%" y2={i * cellSize + 0.5} 
-                      stroke="#f87171" strokeWidth="1" strokeOpacity="0.5" 
+                      stroke={isOfficeMode ? "#d1d5db" : "#f87171"} 
+                      strokeWidth="1" 
+                      strokeOpacity={isOfficeMode ? "0.3" : "0.5"} 
                     />
                   ))}
 
@@ -357,7 +418,10 @@ export default function App() {
                       key={`v-dashed-${i}`}
                       x1={i * cellSize + (cellSize / 2) + 0.5} y1="0" 
                       x2={i * cellSize + (cellSize / 2) + 0.5} y2="100%" 
-                      stroke="#f87171" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="2,2"
+                      stroke={isOfficeMode ? "#d1d5db" : "#f87171"} 
+                      strokeWidth="1" 
+                      strokeOpacity={isOfficeMode ? "0.1" : "0.2"} 
+                      strokeDasharray="2,2"
                     />
                   ))}
                   {/* Horizontal Dashed Lines */}
@@ -366,7 +430,10 @@ export default function App() {
                       key={`h-dashed-${i}`}
                       x1="0" y1={i * cellSize + (cellSize / 2) + 0.5} 
                       x2="100%" y2={i * cellSize + (cellSize / 2) + 0.5} 
-                      stroke="#f87171" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="2,2"
+                      stroke={isOfficeMode ? "#d1d5db" : "#f87171"} 
+                      strokeWidth="1" 
+                      strokeOpacity={isOfficeMode ? "0.1" : "0.2"} 
+                      strokeDasharray="2,2"
                     />
                   ))}
 
@@ -381,11 +448,11 @@ export default function App() {
                       y={Math.floor(idx / gridWidth) * cellSize + (cellSize / 2) + 0.5}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      className="font-serif pointer-events-none"
+                      className={`${isOfficeMode ? 'font-sans' : 'font-serif'} pointer-events-none`}
                       style={{ 
                         fontSize: `${Math.floor(cellSize * 0.6)}px`, 
-                        fill: '#1c1917',
-                        fontFamily: '"Noto Serif SC", serif'
+                        fill: isOfficeMode ? '#4b5563' : '#1c1917',
+                        fontFamily: isOfficeMode ? 'system-ui, sans-serif' : '"Noto Serif SC", serif'
                       }}
                     >
                       {char}
@@ -403,11 +470,11 @@ export default function App() {
                           y={Math.floor(idx / gridWidth) * cellSize + (cellSize / 2) + 0.5}
                           textAnchor="middle"
                           dominantBaseline="central"
-                          className="font-serif pointer-events-none"
+                          className={`${isOfficeMode ? 'font-sans' : 'font-serif'} pointer-events-none`}
                           style={{ 
                             fontSize: `${Math.floor(cellSize * 0.6)}px`, 
                             fill: '#3b82f6', // Blue for composition
-                            fontFamily: '"Noto Serif SC", serif',
+                            fontFamily: isOfficeMode ? 'system-ui, sans-serif' : '"Noto Serif SC", serif',
                             textDecoration: 'underline',
                             textUnderlineOffset: '4px'
                           }}
@@ -437,16 +504,16 @@ export default function App() {
                 {editingIndex !== null && (
                   <input
                     autoFocus
-                    className="absolute z-30 bg-transparent border-2 border-red-500 text-center font-serif focus:outline-none shadow-lg"
+                    className={`absolute z-30 bg-transparent border-2 ${isOfficeMode ? 'border-stone-400' : 'border-red-500'} text-center ${isOfficeMode ? 'font-sans' : 'font-serif'} focus:outline-none shadow-lg`}
                     style={{
                       left: (editingIndex % gridWidth) * cellSize,
                       top: Math.floor(editingIndex / gridWidth) * cellSize,
                       width: cellSize + 1,
                       height: cellSize + 1,
                       fontSize: `${Math.floor(cellSize * 0.6)}px`,
-                      fontFamily: '"Noto Serif SC", serif',
+                      fontFamily: isOfficeMode ? 'system-ui, sans-serif' : '"Noto Serif SC", serif',
                       color: 'transparent',
-                      caretColor: '#ef4444'
+                      caretColor: isOfficeMode ? '#4b5563' : '#ef4444'
                     }}
                     value={editValue}
                     onCompositionStart={() => { isComposing.current = true; }}
@@ -514,10 +581,10 @@ export default function App() {
                     return (
                       <div 
                         key={`count-${count}`}
-                        className="absolute -right-16 w-16 flex items-center pl-2 text-[10px] font-mono font-bold text-red-400 whitespace-nowrap"
+                        className={`absolute -right-16 w-16 flex items-center pl-2 text-[10px] font-mono font-bold whitespace-nowrap transition-colors ${isOfficeMode ? 'text-stone-300' : 'text-red-400'}`}
                         style={{ top: row * cellSize, height: cellSize }}
                       >
-                        ← {count} 字
+                        ← {count} {isOfficeMode ? '' : '字'}
                       </div>
                     );
                   })}
@@ -528,7 +595,7 @@ export default function App() {
       </motion.main>
 
       {/* SEO Content Section */}
-      <section className="max-w-5xl mx-auto px-6 pb-12">
+      <section className={`max-w-5xl mx-auto px-6 pb-12 ${isOfficeMode ? 'sr-only' : ''}`}>
         <div className="bg-white/50 rounded-2xl p-8 border border-stone-200/60">
           <h2 className="text-lg font-bold text-stone-700 mb-4">关于申论田字格模拟器</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm text-stone-500 leading-relaxed">
@@ -550,7 +617,7 @@ export default function App() {
 
       {/* Footer / Stats for mobile */}
       <div className="sm:hidden fixed bottom-6 right-6 z-20">
-        <div className="bg-red-600 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+        <div className={`text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 transition-colors ${isOfficeMode ? 'bg-stone-600' : 'bg-red-600'}`}>
           <FileText size={18} />
           <span className="font-bold">{wordCount}</span>
         </div>
