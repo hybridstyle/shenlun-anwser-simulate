@@ -25,6 +25,7 @@ export default function App() {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   const isComposing = useRef(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Persist collapse state
@@ -137,6 +138,49 @@ export default function App() {
             >
               <Settings2 size={20} />
             </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowClearConfirm(!showClearConfirm)}
+                className={`p-2 rounded-full transition-all ${
+                  showClearConfirm 
+                  ? 'bg-red-600 text-white shadow-md' 
+                  : 'hover:bg-red-50 text-stone-600 hover:text-red-600'
+                }`}
+                title="一键清空"
+              >
+                <Trash2 size={20} />
+              </button>
+              
+              <AnimatePresence>
+                {showClearConfirm && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    className="absolute right-0 top-full mt-2 bg-white border border-stone-200 shadow-xl rounded-xl p-3 z-50 min-w-[160px]"
+                  >
+                    <p className="text-xs font-bold text-stone-700 mb-3">确定清空所有内容吗？</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          handleClear();
+                          setShowClearConfirm(false);
+                        }}
+                        className="flex-1 bg-red-600 text-white text-xs py-1.5 rounded-md font-bold hover:bg-red-700 transition-colors"
+                      >
+                        确认清空
+                      </button>
+                      <button
+                        onClick={() => setShowClearConfirm(false)}
+                        className="flex-1 bg-stone-100 text-stone-600 text-xs py-1.5 rounded-md font-bold hover:bg-stone-200 transition-colors"
+                      >
+                        取消
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>
@@ -348,6 +392,32 @@ export default function App() {
                     </motion.text>
                   ))}
 
+                  {/* Composition Preview */}
+                  {editingIndex !== null && editValue.length > 0 && (
+                    editValue.split('').map((char, i) => {
+                      const idx = editingIndex + i;
+                      return (
+                        <text
+                          key={`comp-${idx}`}
+                          x={(idx % gridWidth) * cellSize + (cellSize / 2) + 0.5}
+                          y={Math.floor(idx / gridWidth) * cellSize + (cellSize / 2) + 0.5}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          className="font-serif pointer-events-none"
+                          style={{ 
+                            fontSize: `${Math.floor(cellSize * 0.6)}px`, 
+                            fill: '#3b82f6', // Blue for composition
+                            fontFamily: '"Noto Serif SC", serif',
+                            textDecoration: 'underline',
+                            textUnderlineOffset: '4px'
+                          }}
+                        >
+                          {char}
+                        </text>
+                      );
+                    })
+                  )}
+
                   {/* Clickable areas for editing - Only on Desktop */}
                   {isDesktop && Array.from({ length: Math.max(gridWidth * 15, characters.length + 1) }).map((_, idx) => (
                     <rect
@@ -367,14 +437,16 @@ export default function App() {
                 {editingIndex !== null && (
                   <input
                     autoFocus
-                    className="absolute z-30 bg-white border-2 border-red-500 text-center font-serif focus:outline-none shadow-lg"
+                    className="absolute z-30 bg-transparent border-2 border-red-500 text-center font-serif focus:outline-none shadow-lg"
                     style={{
                       left: (editingIndex % gridWidth) * cellSize,
                       top: Math.floor(editingIndex / gridWidth) * cellSize,
                       width: cellSize + 1,
                       height: cellSize + 1,
                       fontSize: `${Math.floor(cellSize * 0.6)}px`,
-                      fontFamily: '"Noto Serif SC", serif'
+                      fontFamily: '"Noto Serif SC", serif',
+                      color: 'transparent',
+                      caretColor: '#ef4444'
                     }}
                     value={editValue}
                     onCompositionStart={() => { isComposing.current = true; }}
