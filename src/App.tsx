@@ -208,38 +208,6 @@ export default function App() {
                   onChange={(e) => setText(e.target.value)}
                 />
               </div>
-
-              <AnimatePresence>
-                {showSettings && (
-                  <motion.div 
-                    layout
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3"
-                  >
-                    <h3 className="text-sm font-bold text-stone-700">设置</h3>
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm text-stone-500">每行格数</label>
-                      <div className="flex items-center gap-2">
-                        {[15, 20, 25].map((w) => (
-                          <button
-                            key={w}
-                            onClick={() => setGridWidth(w)}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
-                              gridWidth === w 
-                              ? 'bg-red-600 text-white' 
-                              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                            }`}
-                          >
-                            {w}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </motion.section>
           )}
         </AnimatePresence>
@@ -248,9 +216,52 @@ export default function App() {
         <motion.section 
           layout
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="flex-1 min-w-0 w-full relative" 
+          className="flex-1 min-w-0 w-full relative space-y-4" 
           ref={containerRef}
         >
+            <AnimatePresence>
+              {showSettings && (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="bg-white p-4 rounded-xl border border-stone-200 shadow-sm space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-sm font-bold text-stone-700">设置</h3>
+                      <div className="h-4 w-px bg-stone-200" />
+                      <div className="flex items-center gap-4">
+                        <label className="text-sm text-stone-500">每行格数</label>
+                        <div className="flex items-center gap-2">
+                          {[15, 20, 25].map((w) => (
+                            <button
+                              key={w}
+                              onClick={() => setGridWidth(w)}
+                              className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                                gridWidth === w 
+                                ? 'bg-red-600 text-white' 
+                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                              }`}
+                            >
+                              {w}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowSettings(false)}
+                      className="text-xs text-stone-400 hover:text-stone-600"
+                    >
+                      关闭
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {isInputCollapsed && isDesktop && (
               <motion.button 
                 initial={{ opacity: 0, scale: 0.8 }}
