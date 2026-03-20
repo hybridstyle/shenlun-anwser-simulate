@@ -592,31 +592,47 @@ export default function App() {
                 {/* Overlay for Row Numbers and Word Count */}
                 <div className="absolute inset-0 pointer-events-none">
                   {/* Row Numbers */}
-                  {Array.from({ length: Math.max(15, Math.ceil(characters.length / gridWidth)) }).map((_, i) => (
-                    <div 
-                      key={`row-num-${i}`}
-                      className="absolute -left-8 w-8 flex items-center justify-end pr-2 text-[10px] font-mono text-stone-400"
-                      style={{ top: i * cellSize, height: cellSize }}
-                    >
-                      {i + 1}
-                    </div>
-                  ))}
-                  
-                  {/* Word Count Markers (only show up to current text length) */}
-                  {Array.from({ length: Math.floor(characters.length / 100) }).map((_, i) => {
-                    const count = (i + 1) * 100;
-                    const idx = count - 1;
-                    const row = Math.floor(idx / gridWidth);
+                  {(() => {
+                    const totalRows = Math.max(15, Math.ceil(characters.length / gridWidth));
+                    const totalCells = totalRows * gridWidth;
+                    const markerCount = Math.floor(totalCells / 50);
+
                     return (
-                      <div 
-                        key={`count-${count}`}
-                        className={`absolute -right-16 w-16 flex items-center pl-2 text-[10px] font-mono font-bold whitespace-nowrap transition-colors ${isOfficeMode ? 'text-stone-300' : 'text-red-400'}`}
-                        style={{ top: row * cellSize, height: cellSize }}
-                      >
-                        ← {count} {isOfficeMode ? '' : '字'}
-                      </div>
+                      <>
+                        {Array.from({ length: totalRows }).map((_, i) => (
+                          <div 
+                            key={`row-num-${i}`}
+                            className="absolute -left-8 w-8 flex items-center justify-end pr-2 text-[10px] font-mono text-stone-400"
+                            style={{ top: i * cellSize, height: cellSize }}
+                          >
+                            {i + 1}
+                          </div>
+                        ))}
+                        
+                        {/* Word Count Markers (show for the entire visible grid) */}
+                        {Array.from({ length: markerCount }).map((_, i) => {
+                          const count = (i + 1) * 50;
+                          const idx = count - 1;
+                          const row = Math.floor(idx / gridWidth);
+                          const isPastText = count > characters.length;
+
+                          return (
+                            <div 
+                              key={`count-${count}`}
+                              className={`absolute -right-16 w-16 flex items-center pl-2 text-[10px] font-mono font-bold whitespace-nowrap transition-colors ${
+                                isOfficeMode 
+                                  ? (isPastText ? 'text-stone-200' : 'text-stone-300') 
+                                  : (isPastText ? 'text-red-200' : 'text-red-400')
+                              }`}
+                              style={{ top: row * cellSize, height: cellSize }}
+                            >
+                              ← {count} {isOfficeMode ? '' : '字'}
+                            </div>
+                          );
+                        })}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               </div>
             </div>
