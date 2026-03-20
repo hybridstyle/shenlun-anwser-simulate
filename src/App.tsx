@@ -32,6 +32,7 @@ export default function App() {
   const [editValue, setEditValue] = useState('');
   const isComposing = useRef(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [isOfficeMode, setIsOfficeMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('shenlun_office_mode');
@@ -107,6 +108,8 @@ export default function App() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const handleCellClick = (idx: number) => {
@@ -218,6 +221,32 @@ export default function App() {
                         取消
                       </button>
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="relative">
+              <button 
+                onClick={handleCopy}
+                className={`p-2 rounded-full transition-all ${
+                  isCopied
+                  ? (isOfficeMode ? 'bg-stone-600 text-white shadow-md' : 'bg-red-600 text-white shadow-md')
+                  : (isOfficeMode ? 'hover:bg-stone-100 text-stone-600' : 'hover:bg-red-50 text-stone-600 hover:text-red-600')
+                }`}
+                title="复制全部文字"
+              >
+                <Copy size={20} />
+              </button>
+              
+              <AnimatePresence>
+                {isCopied && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    className="absolute right-0 top-full mt-2 bg-stone-800 text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 whitespace-nowrap"
+                  >
+                    已复制到剪贴板
                   </motion.div>
                 )}
               </AnimatePresence>
