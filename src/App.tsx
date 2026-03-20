@@ -61,6 +61,11 @@ export default function App() {
     <div className="min-h-screen bg-stone-50 text-stone-900 font-sans selection:bg-red-100">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-stone-200 px-6 py-4">
+        {/* Visually hidden SEO text */}
+        <div className="sr-only">
+          <h2>申论写作练习工具 - 模拟田字格排版</h2>
+          <p>本工具专为公务员考试申论写作设计，提供标准的 15x15、20x20、25x25 田字格模拟。支持自动字数统计，严格遵循标点符号占格规则，帮助考生精准掌控写作篇幅。</p>
+        </div>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-red-600 p-2 rounded-lg text-white">
@@ -263,6 +268,27 @@ export default function App() {
             </div>
         </section>
       </main>
+
+      {/* SEO Content Section */}
+      <section className="max-w-5xl mx-auto px-6 pb-12">
+        <div className="bg-white/50 rounded-2xl p-8 border border-stone-200/60">
+          <h2 className="text-lg font-bold text-stone-700 mb-4">关于申论田字格模拟器</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm text-stone-500 leading-relaxed">
+            <div>
+              <h3 className="font-bold text-stone-600 mb-2">标准排版</h3>
+              <p>提供 15、20、25 字每行的标准申论田字格，完美模拟真实考场答题纸效果。</p>
+            </div>
+            <div>
+              <h3 className="font-bold text-stone-600 mb-2">字数统计</h3>
+              <p>实时统计输入字数，支持标点符号占格计算，帮助您精准控制申论大作文篇幅。</p>
+            </div>
+            <div>
+              <h3 className="font-bold text-stone-600 mb-2">备考利器</h3>
+              <p>适用于国考、省考等各类公务员考试申论写作练习，提升排版美观度与字数掌控力。</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Footer / Stats for mobile */}
       <div className="sm:hidden fixed bottom-6 right-6 z-20">
