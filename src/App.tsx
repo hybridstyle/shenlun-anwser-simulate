@@ -14,12 +14,23 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [gridWidth, setGridWidth] = useState(25);
   const [cellSize, setCellSize] = useState(40);
-  const [isInputCollapsed, setIsInputCollapsed] = useState(false);
+  const [isInputCollapsed, setIsInputCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shenlun_input_collapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const [isDesktop, setIsDesktop] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
   const isComposing = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Persist collapse state
+  useEffect(() => {
+    localStorage.setItem('shenlun_input_collapsed', JSON.stringify(isInputCollapsed));
+  }, [isInputCollapsed]);
 
   // Responsive cell size calculation
   useEffect(() => {
@@ -28,7 +39,9 @@ export default function App() {
         const containerWidth = containerRef.current.clientWidth;
         const desktop = window.innerWidth >= 1024;
         setIsDesktop(desktop);
-        if (!desktop) setEditingIndex(null);
+        if (!desktop) {
+          setEditingIndex(null);
+        }
         // Account for padding (sm:p-8 = 64px, p-4 = 32px)
         const padding = window.innerWidth >= 640 ? 64 : 32;
         const availableWidth = containerWidth - padding - 2; // Added 2px buffer
@@ -134,14 +147,14 @@ export default function App() {
       >
         {/* Input Section */}
         <AnimatePresence initial={false}>
-          {!isInputCollapsed && (
+          {(!isInputCollapsed || !isDesktop) && (
             <motion.section 
               layout
               initial={{ opacity: 0, width: 0, marginRight: 0 }}
               animate={{ 
                 opacity: 1, 
-                width: 'auto',
-                marginRight: 32, // gap-8 = 32px
+                width: isDesktop ? 'auto' : '100%',
+                marginRight: isDesktop ? 32 : 0, // gap-8 = 32px
                 transition: {
                   width: { type: "spring", stiffness: 300, damping: 30 },
                   opacity: { duration: 0.2, delay: 0.1 }
@@ -238,7 +251,7 @@ export default function App() {
           className="flex-1 min-w-0 w-full relative" 
           ref={containerRef}
         >
-            {isInputCollapsed && (
+            {isInputCollapsed && isDesktop && (
               <motion.button 
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
