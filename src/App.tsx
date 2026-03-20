@@ -15,6 +15,10 @@ export default function App() {
   const [gridWidth, setGridWidth] = useState(25);
   const [cellSize, setCellSize] = useState(40);
   const [isInputCollapsed, setIsInputCollapsed] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const isComposing = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Responsive cell size calculation
@@ -22,9 +26,12 @@ export default function App() {
     const updateSize = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
+        const desktop = window.innerWidth >= 1024;
+        setIsDesktop(desktop);
+        if (!desktop) setEditingIndex(null);
         // Account for padding (sm:p-8 = 64px, p-4 = 32px)
         const padding = window.innerWidth >= 640 ? 64 : 32;
-        const availableWidth = containerWidth - padding;
+        const availableWidth = containerWidth - padding - 2; // Added 2px buffer
         const optimalSize = Math.floor(availableWidth / gridWidth);
         // Max size 40px, but can be smaller
         setCellSize(Math.min(40, optimalSize));
@@ -56,6 +63,35 @@ export default function App() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
+  };
+
+  const handleCellClick = (idx: number) => {
+    setEditingIndex(idx);
+    setEditValue(characters[idx] || '');
+  };
+
+  const handleCellEdit = (val: string) => {
+    setEditValue(val);
+    
+    // Only commit if NOT composing and we have content
+    if (!isComposing.current && val.length > 0) {
+      const chars = val.split('');
+      const newChars = [...characters];
+      
+      // Ensure we have enough length to reach the editing index
+      while (newChars.length < editingIndex!) {
+        newChars.push(' ');
+      }
+      
+      // Replace the character at current index and insert any additional ones
+      // This behaves like "overtype" for the first char and "insert" for the rest
+      newChars.splice(editingIndex!, 1, ...chars);
+      setText(newChars.join(''));
+      
+      // Move cursor forward by the number of characters inserted
+      setEditingIndex(editingIndex! + chars.length);
+      setEditValue('');
+    }
   };
 
   return (
@@ -94,7 +130,7 @@ export default function App() {
 
       <motion.main 
         layout
-        className="max-w-5xl mx-auto p-6 flex flex-col lg:flex-row gap-8 items-start overflow-hidden"
+        className="max-w-[1600px] mx-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start"
       >
         {/* Input Section */}
         <AnimatePresence initial={false}>
@@ -199,7 +235,7 @@ export default function App() {
         <motion.section 
           layout
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="flex-1 w-full relative" 
+          className="flex-1 min-w-0 w-full relative" 
           ref={containerRef}
         >
             {isInputCollapsed && (
@@ -213,7 +249,7 @@ export default function App() {
                 <ChevronRight size={20} />
               </motion.button>
             )}
-            <div className="bg-white rounded-2xl shadow-md border border-stone-200 p-4 sm:p-8 overflow-hidden min-h-[600px] flex justify-center items-start">
+            <div className="bg-white rounded-2xl shadow-md border border-stone-200 p-4 sm:p-8 overflow-x-auto min-h-[600px] flex justify-start lg:justify-center items-start">
               <div 
                 className="relative bg-white"
                 style={{ 
@@ -277,7 +313,7 @@ export default function App() {
                       y={Math.floor(idx / gridWidth) * cellSize + (cellSize / 2) + 0.5}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      className="font-serif"
+                      className="font-serif pointer-events-none"
                       style={{ 
                         fontSize: `${Math.floor(cellSize * 0.6)}px`, 
                         fill: '#1c1917',
@@ -287,7 +323,79 @@ export default function App() {
                       {char}
                     </motion.text>
                   ))}
+
+                  {/* Clickable areas for editing - Only on Desktop */}
+                  {isDesktop && Array.from({ length: Math.max(gridWidth * 15, characters.length + 1) }).map((_, idx) => (
+                    <rect
+                      key={`click-${idx}`}
+                      x={(idx % gridWidth) * cellSize}
+                      y={Math.floor(idx / gridWidth) * cellSize}
+                      width={cellSize}
+                      height={cellSize}
+                      fill="transparent"
+                      className="cursor-text hover:fill-red-50/40 transition-colors"
+                      onClick={() => handleCellClick(idx)}
+                    />
+                  ))}
                 </svg>
+
+                {/* Inline Editor Overlay */}
+                {editingIndex !== null && (
+                  <input
+                    autoFocus
+                    className="absolute z-30 bg-white border-2 border-red-500 text-center font-serif focus:outline-none shadow-lg"
+                    style={{
+                      left: (editingIndex % gridWidth) * cellSize,
+                      top: Math.floor(editingIndex / gridWidth) * cellSize,
+                      width: cellSize + 1,
+                      height: cellSize + 1,
+                      fontSize: `${Math.floor(cellSize * 0.6)}px`,
+                      fontFamily: '"Noto Serif SC", serif'
+                    }}
+                    value={editValue}
+                    onCompositionStart={() => { isComposing.current = true; }}
+                    onCompositionEnd={(e) => {
+                      isComposing.current = false;
+                      // Trigger edit with the final composed value
+                      handleCellEdit(e.currentTarget.value);
+                    }}
+                    onChange={(e) => handleCellEdit(e.target.value)}
+                    onBlur={() => setEditingIndex(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && editValue === '') {
+                        const prevIdx = editingIndex! - 1;
+                        if (prevIdx >= 0) {
+                          const newChars = [...characters];
+                          newChars.splice(prevIdx, 1);
+                          setText(newChars.join(''));
+                          setEditingIndex(prevIdx);
+                        }
+                        e.preventDefault();
+                      } else if (e.key === 'Delete' && editValue === '') {
+                        if (editingIndex! < characters.length) {
+                          const newChars = [...characters];
+                          newChars.splice(editingIndex!, 1);
+                          setText(newChars.join(''));
+                        }
+                        e.preventDefault();
+                      } else if (e.key === 'ArrowLeft') {
+                        setEditingIndex(Math.max(0, editingIndex! - 1));
+                        e.preventDefault();
+                      } else if (e.key === 'ArrowRight') {
+                        setEditingIndex(Math.min(characters.length, editingIndex! + 1));
+                        e.preventDefault();
+                      } else if (e.key === 'ArrowUp') {
+                        setEditingIndex(Math.max(0, editingIndex! - gridWidth));
+                        e.preventDefault();
+                      } else if (e.key === 'ArrowDown') {
+                        setEditingIndex(Math.min(characters.length, editingIndex! + gridWidth));
+                        e.preventDefault();
+                      } else if (e.key === 'Enter' || e.key === 'Escape') {
+                        setEditingIndex(null);
+                      }
+                    }}
+                  />
+                )}
 
                 {/* Overlay for Row Numbers and Word Count */}
                 <div className="absolute inset-0 pointer-events-none">
